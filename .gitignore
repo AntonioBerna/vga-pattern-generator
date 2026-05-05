@@ -1,0 +1,6 @@
+# Ignore build artifacts of Verilator
+build/
+*.vcd
+
+# For now ignore documentation files
+*.md
