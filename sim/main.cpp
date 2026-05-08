@@ -74,13 +74,6 @@ Options parseOptions(int argc, char** argv) {
   return options;
 }
 
-void applyScenarioStep(Vvideo_pipeline_top& dut, const ScenarioStep& step, size_t index) {
-  dut.mode_select_i = step.mode;
-  dut.pattern_select_i = step.pattern;
-  std::cout << "[sim] step " << (index + 1) << "/" << kScenario.size() << ": " << step.label
-            << '\n';
-}
-
 uint64_t computeMaxPixelClocks(uint32_t frames_per_step) {
   uint64_t total = 0;
   for (const auto& step : kScenario) {
@@ -114,6 +107,34 @@ void tickDut(Vvideo_pipeline_top& dut, VerilatedVcdC* trace, uint64_t& sim_time,
                static_cast<uint8_t>(dut.red_o), static_cast<uint8_t>(dut.green_o),
                static_cast<uint8_t>(dut.blue_o));
 }
+
+void observeScenarioStep(const Vvideo_pipeline_top& dut, size_t& observed_step_index,
+                         uint8_t& last_mode, uint8_t& last_pattern) {
+  const uint8_t active_mode = static_cast<uint8_t>(dut.active_mode_o & 0x3u);
+  const uint8_t active_pattern = static_cast<uint8_t>(dut.active_pattern_o & 0x7u);
+
+  if (active_mode == last_mode && active_pattern == last_pattern) {
+    return;
+  }
+
+  if (observed_step_index >= kScenario.size()) {
+    last_mode = active_mode;
+    last_pattern = active_pattern;
+    return;
+  }
+
+  const auto& expected = kScenario.at(observed_step_index);
+  if (active_mode != expected.mode || active_pattern != expected.pattern) {
+    throw std::runtime_error("unexpected internal scenario step detected in the DUT");
+  }
+
+  std::cout << "[sim] step " << (observed_step_index + 1) << "/" << kScenario.size() << ": "
+            << expected.label << '\n';
+
+  last_mode = active_mode;
+  last_pattern = active_pattern;
+  ++observed_step_index;
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -135,23 +156,27 @@ int main(int argc, char** argv) {
     uint64_t sim_time = 0;
     uint64_t pixel_clocks = 0;
     const uint64_t max_pixel_clocks = computeMaxPixelClocks(options.frames_per_step);
+    const uint64_t target_frames = static_cast<uint64_t>(options.frames_per_step) * kScenario.size();
 
-    size_t step_index = 0;
-    uint64_t step_start_frame = 0;
+    size_t observed_step_index = 0;
     uint8_t monitor_mode = 0xffu;
+    uint8_t last_mode = 0xffu;
+    uint8_t last_pattern = 0xffu;
 
     dut->clk_i = 0;
     dut->rst_i = 1;
-    applyScenarioStep(*dut, kScenario.at(step_index), step_index);
+    dut->sequence_frames_per_step_i = static_cast<uint16_t>(options.frames_per_step);
     for (int i = 0; i < 8; ++i) {
       tickDut(*dut, trace.get(), sim_time, *monitor, monitor_mode);
       ++pixel_clocks;
     }
     dut->rst_i = 0;
 
-    while (!Verilated::gotFinish() && !monitor->quitRequested() && step_index < kScenario.size()) {
+    while (!Verilated::gotFinish() && !monitor->quitRequested() && monitor->framesPresented() < target_frames) {
       tickDut(*dut, trace.get(), sim_time, *monitor, monitor_mode);
       ++pixel_clocks;
+
+      observeScenarioStep(*dut, observed_step_index, last_mode, last_pattern);
 
       if (dut->stream_error_o != 0) {
         throw std::runtime_error("AXIS-to-VGA alignment error detected by the DUT");
@@ -160,14 +185,10 @@ int main(int argc, char** argv) {
       if (pixel_clocks > max_pixel_clocks) {
         throw std::runtime_error("simulation timeout while waiting for the scenario to complete");
       }
+    }
 
-      if ((monitor->framesPresented() - step_start_frame) >= options.frames_per_step) {
-        ++step_index;
-        if (step_index < kScenario.size()) {
-          step_start_frame = monitor->framesPresented();
-          applyScenarioStep(*dut, kScenario.at(step_index), step_index);
-        }
-      }
+    if (observed_step_index != kScenario.size()) {
+      throw std::runtime_error("the DUT did not traverse the full internal scenario");
     }
 
     if (trace != nullptr) {

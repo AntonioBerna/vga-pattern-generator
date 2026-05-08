@@ -5,8 +5,8 @@ OBJ_DIR := $(BUILD_DIR)/obj_dir
 BIN := $(OBJ_DIR)/V$(TOP)
 
 RTL_SOURCES := \
-	$(ROOT_DIR)/rtl/axis_fifo.sv \
-	$(ROOT_DIR)/rtl/axis_framebuffer.sv \
+	$(ROOT_DIR)/rtl/pattern_sequence_ctrl.sv \
+	$(ROOT_DIR)/rtl/axis_skid_buffer.sv \
 	$(ROOT_DIR)/rtl/axis_video_if.sv \
 	$(ROOT_DIR)/rtl/video_timing_gen.sv \
 	$(ROOT_DIR)/rtl/pattern_generator_axis.sv \
