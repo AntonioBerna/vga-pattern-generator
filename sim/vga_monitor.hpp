@@ -8,6 +8,7 @@
 
 struct VideoMode {
   const char* name;
+  uint32_t pixel_clock_hz;
   uint32_t h_visible;
   uint32_t h_front;
   uint32_t h_sync;
@@ -18,6 +19,8 @@ struct VideoMode {
   uint32_t v_sync;
   uint32_t v_back;
   uint32_t v_total;
+  bool hsync_active_low;
+  bool vsync_active_low;
 };
 
 class VGAMonitor {
@@ -55,13 +58,13 @@ class VGAMonitor {
   bool saw_hsync_;
   bool saw_vsync_;
   bool frame_locked_;
-  bool hsync_low_;
-  bool vsync_low_;
-  uint32_t pixels_since_hsync_fall_;
-  uint32_t lines_since_vsync_fall_;
+  bool hsync_pulse_active_;
+  bool vsync_pulse_active_;
+  uint32_t pixels_since_hsync_assert_;
+  uint32_t lines_since_vsync_assert_;
   uint32_t line_from_vsync_;
-  uint32_t hsync_low_width_;
-  uint32_t vsync_low_lines_;
+  uint32_t hsync_pulse_width_;
+  uint32_t vsync_pulse_lines_;
   uint64_t frames_presented_;
   uint64_t timing_errors_;
   bool frame_dirty_;
