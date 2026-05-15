@@ -5,7 +5,7 @@
 This project implements a VGA pattern generator in SystemVerilog.
 The reference design uses a 100 MHz system clock.
 
-## :clipboard: Specifications
+## :building_construction: Architecture
 
 - RTL language: SystemVerilog
 - Video output: VGA
@@ -22,9 +22,7 @@ The reference design uses a 100 MHz system clock.
 	- 800x600 @ 60 Hz with a 40 MHz pixel clock
 	- 1024x768 @ 60 Hz with a 65 MHz pixel clock
 
-## :building_construction: Architecture
-
-Implemented architecture:
+Block architecture:
 
 ```
 +--------------+    +------------+    +-----------+    +-------------+    +------------+
@@ -131,3 +129,8 @@ Expected output:
 
 > [!TIP]
 > A demo video of the SDL2 simulation is not included yet.
+
+## :bulb: Laboratory of FPGA Design Flow
+
+> [!WARNING]
+> Work in progress: waiting for Digilent Basys 3 FPGA board.
