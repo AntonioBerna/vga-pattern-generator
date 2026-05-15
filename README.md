@@ -3,6 +3,7 @@
 ## :brain: Overview
 
 This project implements a VGA pattern generator in SystemVerilog.
+
 The reference design uses a 100 MHz system clock.
 
 ## :building_construction: Architecture
